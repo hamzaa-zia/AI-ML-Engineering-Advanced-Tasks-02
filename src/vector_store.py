@@ -34,14 +34,27 @@ def build_vector_index(chunks: list[dict], index_dir: Path = INDEX_DIR) -> dict:
     joblib.dump(vectorizer, VECTORIZER_PATH)
     joblib.dump(matrix, MATRIX_PATH)
 
-    source_titles = sorted(
-        {chunk["metadata"].get("source_title", "Unknown") for chunk in chunks}
-    )
+    source_lookup = {}
+    for chunk in chunks:
+        chunk_metadata = chunk["metadata"]
+        title = chunk_metadata.get("source_title", "Unknown")
+        source_lookup.setdefault(
+            title,
+            {
+                "title": title,
+                "url": chunk_metadata.get("source_url", ""),
+                "kind": chunk_metadata.get("source_kind", ""),
+            },
+        )
+
+    sources = sorted(source_lookup.values(), key=lambda item: item["title"].lower())
+    source_titles = [source["title"] for source in sources]
     metadata = {
         "built_at_utc": datetime.now(timezone.utc).isoformat(),
         "chunk_count": len(chunks),
         "source_count": len(source_titles),
         "source_titles": source_titles,
+        "sources": sources,
     }
     INDEX_METADATA_PATH.write_text(json.dumps(metadata, indent=2), encoding="utf-8")
     return metadata

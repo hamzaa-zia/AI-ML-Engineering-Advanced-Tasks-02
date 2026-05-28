@@ -41,11 +41,15 @@ GENERIC_TERMS = {
 
 REFERENCE_MARKERS = (
     "http",
+    "htt ps",
+    "web.archive",
     "retrieved from",
     "retrieved ",
     "archived ",
     "isbn",
     "doi:",
+    "video:",
+    "gamasutra",
     "external links",
     "references",
     "further reading",
@@ -66,10 +70,24 @@ def expand_query(question: str) -> str:
         expansions.append("history early arcade console computer mobile online esports")
     if "open world" in lower_question:
         expansions.append("player autonomy freedom exploration nonlinear sandbox objectives")
+    if "genre" in lower_question or "genres" in lower_question:
+        expansions.append("video game genre action adventure role-playing shooter racing sports puzzle strategy")
+    if "action-adventure" in lower_question or "action adventure" in lower_question:
+        expansions.append("action-adventure game exploration combat puzzles story")
+    if "cloud" in lower_question or "streaming" in lower_question:
+        expansions.append("cloud gaming streaming remote server latency subscription")
+    if "horror" in lower_question:
+        expansions.append("horror game survival horror fear atmosphere tension")
+    if "racing" in lower_question:
+        expansions.append("racing video game vehicle driving simulation arcade racing")
+    if "sports" in lower_question:
+        expansions.append("sports video game simulation team sports competition")
     if "aaa" in lower_question or "triple-a" in lower_question:
         expansions.append("high budget marketing publisher franchise blockbuster revenue")
     if "market" in lower_question or "revenue" in lower_question or "industry" in lower_question:
-        expansions.append("video game industry global sales revenue market billion")
+        expansions.append(
+            "video game industry global sales revenue market billion international world trends 2025 Newzoo"
+        )
     return f"{question} {' '.join(expansions)}".strip()
 
 
@@ -114,6 +132,9 @@ def sentence_score(
             score += 3.0
         if " is an " in lower_sentence or " is a " in lower_sentence:
             score += 1.2
+    if "what are" in lower_query:
+        if " is an " in lower_sentence or " is a " in lower_sentence:
+            score += 1.4
     if "evolved" in lower_query or "history" in lower_query:
         if re.search(r"\b(19|20)\d{2}\b", sentence):
             score += 0.8
@@ -130,12 +151,59 @@ def sentence_score(
     if "open world" in lower_query:
         if any(term in lower_sentence for term in ("autonomy", "freedom", "exploration", "nonlinear", "sandbox")):
             score += 1.4
+    if "genre" in lower_query:
+        if any(term in lower_sentence for term in ("classification", "how it is played", "gameplay interaction")):
+            score += 2.0
+        if any(term in lower_sentence for term in ("computer gaming world", "freedom planet", "mini metro")):
+            score -= 1.2
+    if "cloud" in lower_query or "streaming" in lower_query:
+        if any(term in lower_sentence for term in ("remote servers", "streams", "cloud computing", "latency")):
+            score += 1.8
+    if "horror" in lower_query:
+        if any(term in lower_sentence for term in ("survival horror", "fear", "horror themes", "atmosphere")):
+            score += 1.4
+    if "racing" in lower_query:
+        if any(term in lower_sentence for term in ("racing game", "racing video game", "driving", "vehicle")):
+            score += 1.5
+        if "racing games are a video game genre" in lower_sentence:
+            score += 2.2
+        if lower_sentence.startswith(("list of", "formula one video games", "ascar video games")):
+            score -= 3.0
+    if "sports" in lower_query:
+        if any(term in lower_sentence for term in ("sports video game is", "simulates", "team sports", "competition")):
+            score += 1.7
+        if "racing" in lower_sentence:
+            score -= 2.5
+    if "action-adventure" in lower_query or "action adventure" in lower_query:
+        if any(term in lower_sentence for term in ("action/adventure", "action-adventure", "puzzles", "problem-solving")):
+            score += 1.5
     if "aaa" in lower_query or "triple-a" in lower_query:
         if any(term in lower_sentence for term in ("budget", "marketing", "publisher", "franchise", "revenue")):
             score += 1.3
     if "market" in lower_query or "revenue" in lower_query:
         if any(term in lower_sentence for term in ("revenue", "sales", "market", "billion", "global")):
             score += 1.5
+        if any(
+            phrase in lower_sentence
+            for phrase in (
+                "international video game revenue",
+                "global revenue",
+                "global video game market",
+                "worldwide sales",
+                "largest video game markets",
+            )
+        ):
+            score += 2.0
+        if re.search(r"\b20(1[8-9]|2[0-6])\b", sentence) and "equivalent to" not in lower_sentence:
+            score += 0.8
+        if re.search(r"\b(19[5-9]\d|200\d)\b", sentence):
+            score -= 1.2
+        if "equivalent to" in lower_sentence:
+            score -= 0.8
+        if "following countries" in lower_sentence:
+            score -= 1.0
+        if "arcade" in lower_sentence and re.search(r"\b198\d\b", sentence):
+            score -= 1.0
     return score
 
 
@@ -153,6 +221,14 @@ def is_answer_sentence(sentence: str) -> bool:
         return False
     if "may refer to:" in lower_sentence:
         return False
+    if lower_sentence.startswith(("list of", "formula one video games", "ascar video games")):
+        return False
+    if lower_sentence.count(" list of ") >= 2:
+        return False
+    if re.search(r"\b\d+/\S", lower_sentence):
+        return False
+    if "following countries" in lower_sentence:
+        return False
     if "museum" in lower_sentence and "history" in lower_sentence:
         return False
     if len(sentence.split()) < 8:
@@ -165,6 +241,30 @@ def is_answer_sentence(sentence: str) -> bool:
 def clean_answer_sentence(sentence: str) -> str:
     sentence = re.sub(r"=+\s*([^=]{1,80})\s*=+", r"\1", sentence)
     sentence = re.sub(r"\[[^\]]{1,10}\]", "", sentence)
+    sentence = re.sub(
+        r"^(Cloud gaming|Horror game|Racing video game)\s+\1\b",
+        r"\1",
+        sentence,
+        flags=re.IGNORECASE,
+    )
+    sentence = re.sub(
+        r"^Sports video game\s+(A sports video game is\b)",
+        r"\1",
+        sentence,
+        flags=re.IGNORECASE,
+    )
+    sentence = re.sub(
+        r"^.*?\b(A video game genre is an informal classification\b)",
+        r"\1",
+        sentence,
+        flags=re.IGNORECASE,
+    )
+    sentence = re.sub(
+        r"^.*?\b(Racing games are a video game genre\b)",
+        r"\1",
+        sentence,
+        flags=re.IGNORECASE,
+    )
     sentence = re.sub(r"\s+", " ", sentence).strip()
     if len(sentence) > 620:
         sentence = sentence[:620].rsplit(" ", 1)[0].rstrip(" ,;:") + "."
@@ -182,10 +282,10 @@ class RetrievalChatbot:
         top_k: int = DEFAULT_TOP_K,
         sentence_limit: int = DEFAULT_SENTENCE_LIMIT,
         llm_provider: str = "Extractive",
-        answer_style: str = "Concise",
     ) -> dict:
         history = history or []
         search_query = build_search_query(question, history)
+        sentence_limit = min(sentence_limit, 3)
         if "what is gaming" in question.lower():
             top_k = max(top_k, 12)
             sentence_limit = min(sentence_limit, 3)
@@ -218,8 +318,8 @@ class RetrievalChatbot:
         )
         if no_retrieval_match:
             answer = (
-                "I could not find a direct answer in the indexed Wikipedia corpus. "
-                "Try asking with more specific gaming terms or rebuild the index with more sources."
+                "I could not find a solid match in the indexed gaming corpus yet. "
+                "Try asking with a more specific gaming term, or rebuild the index with more sources."
             )
             mode = "extractive"
         elif llm_provider == "Gemini":
@@ -227,7 +327,6 @@ class RetrievalChatbot:
                 question=question,
                 history=history,
                 retrieved_chunks=retrieved_chunks,
-                answer_style=answer_style,
             )
             mode = "gemini"
         else:
@@ -249,23 +348,23 @@ class RetrievalChatbot:
         if "why" in lower_question:
             if "open world" in lower_question:
                 opening = (
-                    "The sources do not prove that open-world games are the most popular, "
-                    "but they explain why the format is appealing:"
+                    "Short answer: the corpus does not prove open-world games are the most popular, "
+                    "but it does show why players are drawn to them."
                 )
             else:
-                opening = "The retrieved Wikipedia context points to these main reasons:"
+                opening = "Here is the quick breakdown from the gaming corpus."
         elif "market" in lower_question or "total" in lower_question:
-            opening = "The indexed Wikipedia material describes the gaming market like this:"
+            opening = "Here is the market picture the corpus gives."
         elif "evolved" in lower_question or "history" in lower_question:
-            opening = "The retrieved history-focused sources show this evolution:"
+            opening = "Here is the gaming history arc in simple terms."
         else:
-            opening = "Based on the indexed Wikipedia sources:"
+            opening = "Here is the quick answer from the gaming corpus."
 
-        lines = [opening]
+        cited_sentences = []
         for sentence, result in selected_sentences:
             title = result["metadata"].get("source_title", "Wikipedia source")
-            lines.append(f"- {sentence} [{title}]")
-        return "\n".join(lines)
+            cited_sentences.append(f"{sentence} [{title}]")
+        return f"{opening} {' '.join(cited_sentences)}"
 
     def _format_sources(self, retrieved_chunks: list[dict]) -> list[dict]:
         sources = []
@@ -283,6 +382,8 @@ class RetrievalChatbot:
             sources.append(
                 {
                     "title": metadata.get("source_title", "Unknown"),
+                    "source_url": metadata.get("source_url", ""),
+                    "source_kind": metadata.get("source_kind", ""),
                     "source": metadata.get("source", ""),
                     "page": metadata.get("page"),
                     "chunk": metadata.get("chunk_index"),

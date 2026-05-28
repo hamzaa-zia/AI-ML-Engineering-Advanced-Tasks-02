@@ -1,8 +1,8 @@
 # Gaming Knowledge RAG Chatbot
 
-A gaming RAG chatbot that answers questions about gaming history, AAA games, open-world games, genres, and the video game industry using Wikipedia PDFs and refreshed Wikipedia text.
+A gaming RAG chatbot that answers questions about gaming history, AAA games, open-world games, genres, and the video game industry using Wikipedia PDFs and refreshed Wikipedia text. The interface also shows ranked Wikipedia sources, source confidence, and clickable source URLs for retrieved context.
 
-The app supports two answer modes: a free local extractive mode and a Gemini API mode that generates cleaner answers from the retrieved Wikipedia context.
+The app defaults to a free local extractive RAG mode. Gemini API mode is available as an optional LLM layer that generates cleaner answers from the retrieved Wikipedia context.
 
 ---
 
@@ -21,7 +21,7 @@ The chatbot is deployed with Streamlit and runs locally.
 
 ## Tools and Libraries
 
-- `streamlit`: builds the chatbot interface. Main functions used are `st.chat_input()` for user input, `st.chat_message()` for chat bubbles, `st.session_state` for memory, `st.sidebar` for controls, and `st.status()` for indexing feedback.
+- `streamlit`: builds the chatbot interface. Main functions used are `st.chat_input()` for user input, `st.session_state` for memory, `st.columns()` for the dashboard layout, custom `st.markdown()` HTML/CSS for chat bubbles and panels, and `st.status()` for indexing feedback.
 - `pypdf`: reads text from Wikipedia PDF files. `PdfReader` opens each PDF and `page.extract_text()` extracts page text.
 - `scikit-learn`: creates the local vectorized document store. `TfidfVectorizer` converts text chunks into vectors, and `cosine_similarity` compares the user query vector with stored document vectors.
 - `joblib`: saves and loads the vectorizer and TF-IDF matrix so the index can be reused without rebuilding every time.
@@ -30,20 +30,40 @@ The chatbot is deployed with Streamlit and runs locally.
 - `python-dotenv`: loads API settings from `.env` or `.env.txt` without hardcoding secrets in the code.
 - `json`: stores chunk metadata, source logs, and index metadata in readable files.
 - `pathlib`: handles project paths safely across Windows folders.
+- `urllib.parse`: converts Wikipedia article titles into browser-safe source URLs.
 - `re`: cleans text, splits sentences, extracts keywords, and normalizes answer text.
-- `subprocess`: lets the Streamlit sidebar run the ingestion script from inside the app.
+- `subprocess`: lets the Streamlit command deck run the ingestion script from inside the app.
 
 ---
 
 ## Workflow
 
 1. `fetch_wikipedia_sources.py` or `python ingest.py --refresh-wikipedia` downloads updated text from configured Wikipedia pages.
-2. `src/document_loader.py` loads PDF, TXT, and Markdown files from `data/raw/`.
-3. `src/text_processing.py` cleans text and splits it into overlapping chunks.
+2. `src/document_loader.py` loads PDF, TXT, and Markdown files from `data/raw/`, then attaches source title, page, source type, and Wikipedia URL metadata.
+3. `src/text_processing.py` removes citation markers, broken PDF line breaks, reference sections, external links, and noisy URL/DOI/ISBN fragments before splitting text into overlapping chunks.
 4. `src/vector_store.py` converts chunks into TF-IDF vectors and saves the local vector index in `data/processed/vector_index/`.
-5. `src/rag_chatbot.py` receives a user question, expands the search query when useful, retrieves the most relevant chunks, and either builds an extractive answer or sends the retrieved context to Gemini.
-6. `src/llm_client.py` loads API settings, formats chat history and retrieved context, and asks the selected model to answer only from the provided sources.
-7. `app.py` provides the Streamlit chat interface and stores conversation history in `st.session_state`.
+5. `src/rag_chatbot.py` receives a user question, expands the search query when useful, retrieves the most relevant chunks, and either builds a concise conversational paragraph or sends the retrieved context to Gemini.
+6. `src/llm_client.py` loads API settings, formats chat history and retrieved context, and asks Gemini to answer in an energetic, casual, source-grounded paragraph style without bullet points.
+7. `app.py` provides the custom Streamlit dashboard with a left retrieval rail, central chat workspace, and right command deck. It stores conversation history in `st.session_state`, displays source links with confidence labels, and hides the default Streamlit chrome for a cleaner app feel.
+
+---
+
+## Corpus Cleaning and Sources
+
+The corpus cleaner keeps the article body focused for retrieval by removing common Wikipedia PDF noise:
+
+- Reference and external-link sections
+- Inline citation tags such as `[12]` and `[citation needed]`
+- Raw URLs, DOI fragments, ISBN fragments, and category footer text
+- Broken hyphenated line breaks caused by PDF extraction
+
+Each indexed chunk now keeps source metadata:
+
+- `source_title`
+- `source_url`
+- `source_kind`
+- `page`
+- `chunk_index`
 
 ---
 
@@ -61,20 +81,26 @@ The chatbot is deployed with Streamlit and runs locally.
 |   |-- raw/
 |   |   |-- AAA_(video_game_industry).pdf
 |   |   |-- Action_game.pdf
+|   |   |-- Action-adventure_game.pdf
 |   |   |-- Adventure_game.pdf
+|   |   |-- Cloud_gaming.pdf
 |   |   |-- Early_history_of_video_games.pdf
 |   |   |-- Fighting_game.pdf
 |   |   |-- Gaming.pdf
+|   |   |-- Horror_game.pdf
 |   |   |-- Indie_game.pdf
 |   |   |-- Live_service_game.pdf
 |   |   |-- Mobile_game.pdf
 |   |   |-- Open_world.pdf
 |   |   |-- Platformer.pdf
 |   |   |-- Puzzle_video_game.pdf
+|   |   |-- Racing_video_game.pdf
 |   |   |-- Role-playing_video_game.pdf
 |   |   |-- Shooter_game.pdf
+|   |   |-- Sports_video_game.pdf
 |   |   |-- Strategy_video_game.pdf
 |   |   |-- Video_game.pdf
+|   |   |-- Video_game_genre.pdf
 |   |   `-- Video_game_industry.pdf
 |   `-- processed/
 |       `-- vector_index/
@@ -143,9 +169,10 @@ run_app.bat
 
 The current index was built from the provided PDFs and refreshed Wikipedia text.
 
-- Loaded document sections/pages: `359`
-- Created text chunks: `1938`
-- Indexed source titles: `20`
+- Loaded document sections/pages: `429`
+- Created text chunks: `1758`
+- Indexed source titles: `26`
+- Wikipedia source URLs: `26`
 
 Generated files:
 
@@ -164,6 +191,11 @@ Generated files:
 - Why are open-world games popular?
 - Why do AAA games sell so much?
 - What is the total market of gaming?
+- What are the main video game genres?
+- What is cloud gaming?
+- What are horror games?
+- What are racing video games?
+- What are sports video games?
 - What are role-playing games?
 - How are mobile games different from console games?
 

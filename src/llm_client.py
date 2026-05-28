@@ -93,12 +93,10 @@ def build_prompt(
     question: str,
     history: list[dict],
     retrieved_chunks: list[dict],
-    answer_style: str = "Concise",
 ) -> tuple[str, str]:
     style_instruction = (
-        "Answer in 4-6 direct bullet points."
-        if answer_style == "Detailed"
-        else "Answer in 2-4 short bullet points."
+        "Write one relevant, concise conversational paragraph. "
+        "Do not use bullet points or numbered lists."
     )
     context = format_context(retrieved_chunks)
     chat_history = format_history(history)
@@ -107,9 +105,12 @@ def build_prompt(
         "You are a gaming knowledge assistant for an internship and university AI "
         "course project. Answer only from the retrieved Wikipedia context. Do not "
         "invent facts, numbers, dates, or market claims. If the retrieved context "
-        "does not contain enough evidence, say that clearly. Keep the answer clean, "
-        "direct, and related to the user's question. End with a short 'Sources:' "
-        "line listing the source titles used."
+        "does not contain enough evidence, say that clearly. Use an energetic, "
+        "casual, conversational voice, like you are explaining the topic to another "
+        "student who enjoys games. Keep it direct and easy to read. Avoid robotic "
+        "phrases such as 'Based on the provided context' unless they are necessary. "
+        "Do not use slang, jokes, emojis, unsupported opinions, bullet points, or "
+        "numbered lists. End with a short 'Sources:' line listing the source titles used."
     )
     prompt = f"""
 Question:
@@ -131,7 +132,6 @@ def generate_gemini_answer(
     question: str,
     history: list[dict],
     retrieved_chunks: list[dict],
-    answer_style: str = "Concise",
 ) -> str:
     api_key = get_gemini_api_key()
     if not api_key:
@@ -141,7 +141,6 @@ def generate_gemini_answer(
         question=question,
         history=history,
         retrieved_chunks=retrieved_chunks,
-        answer_style=answer_style,
     )
     client = genai.Client(api_key=api_key)
     response = client.models.generate_content(

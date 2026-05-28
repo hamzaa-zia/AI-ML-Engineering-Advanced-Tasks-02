@@ -18,23 +18,22 @@ from src.vector_store import LocalVectorStore, load_index_metadata
 st.set_page_config(
     page_title="Arcade RAG Console",
     layout="wide",
-    initial_sidebar_state="expanded",
+    initial_sidebar_state="collapsed",
 )
-
-
-ASSISTANT_AVATAR = ":material/sports_esports:"
-USER_AVATAR = ":material/terminal:"
 
 
 TOPIC_BUTTONS = [
     ("History", "How has gaming evolved?", ":material/history:"),
     ("AAA", "Why do AAA games sell so much?", ":material/diamond:"),
     ("Open World", "Why are open world games popular?", ":material/travel_explore:"),
+    ("Genres", "What are the main video game genres?", ":material/category:"),
+    ("Cloud", "What is cloud gaming?", ":material/cloud:"),
     ("Mobile", "How are mobile games different from console games?", ":material/smartphone:"),
     ("RPG", "What are role-playing games?", ":material/auto_stories:"),
     ("Market", "What is the total market of gaming?", ":material/query_stats:"),
 ]
 
+QUICK_LAUNCH_COLUMNS = 4
 
 CUSTOM_CSS = """
 <style>
@@ -61,39 +60,35 @@ CUSTOM_CSS = """
         color: var(--text);
     }
 
-    [data-testid="stHeader"] {
-        background: rgba(9, 10, 18, 0.86);
-        border-bottom: 1px solid rgba(0, 245, 255, 0.18);
+    #MainMenu,
+    footer,
+    header,
+    [data-testid="stHeader"],
+    [data-testid="stToolbar"],
+    [data-testid="stDecoration"],
+    [data-testid="stStatusWidget"],
+    [data-testid="stSidebar"],
+    [data-testid="collapsedControl"],
+    .stDeployButton {
+        display: none !important;
+        visibility: hidden !important;
+        height: 0 !important;
     }
 
     .block-container {
-        padding-top: 1.1rem;
+        padding-top: 0.85rem;
         max-width: 1280px;
-        padding-bottom: 5rem;
-    }
-
-    div[data-testid="stSidebar"] {
-        background: #0d101b;
-        border-right: 1px solid var(--line);
-    }
-
-    div[data-testid="stSidebar"] * {
-        color: var(--text);
-    }
-
-    div[data-testid="stSidebar"] [data-testid="stMarkdownContainer"] p,
-    div[data-testid="stSidebar"] .stCaptionContainer {
-        color: var(--muted);
+        padding-bottom: 4.5rem;
     }
 
     .arcade-topbar {
         border: 1px solid var(--line);
         border-left: 4px solid var(--cyan);
         background: linear-gradient(135deg, rgba(17, 20, 33, 0.96), rgba(23, 27, 43, 0.92));
-        padding: 1rem 1.1rem;
+        padding: 0.68rem 0.85rem 0.75rem;
         border-radius: 8px;
         box-shadow: 0 0 28px rgba(0, 245, 255, 0.1);
-        margin-bottom: 0.95rem;
+        margin-bottom: 0.7rem;
     }
 
     .title-row {
@@ -104,8 +99,13 @@ CUSTOM_CSS = """
         flex-wrap: wrap;
     }
 
+    .title-copy {
+        min-width: 260px;
+        flex: 1 1 420px;
+    }
+
     .main-title {
-        font-size: 1.75rem;
+        font-size: 1.42rem;
         font-weight: 800;
         line-height: 1.15;
         letter-spacing: 0;
@@ -116,15 +116,48 @@ CUSTOM_CSS = """
 
     .subtitle {
         color: var(--muted);
-        font-size: 0.95rem;
-        margin-top: 0.35rem;
+        font-size: 0.88rem;
+        margin-top: 0.24rem;
+    }
+
+    .header-stats {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(105px, 1fr));
+        gap: 0.55rem;
+        flex: 1 1 390px;
+        max-width: 520px;
+    }
+
+    .header-stat {
+        border: 1px solid rgba(255, 204, 51, 0.26);
+        border-radius: 8px;
+        background: rgba(9, 10, 18, 0.45);
+        padding: 0.38rem 0.5rem;
+        min-height: 48px;
+    }
+
+    .header-stat-label {
+        color: var(--muted);
+        font-size: 0.66rem;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+    }
+
+    .header-stat-value {
+        color: var(--amber);
+        font-size: 0.94rem;
+        font-weight: 780;
+        line-height: 1.15;
+        margin-top: 0.16rem;
+        white-space: nowrap;
     }
 
     .status-strip {
         display: flex;
-        gap: 0.45rem;
+        gap: 0.35rem;
         flex-wrap: wrap;
-        justify-content: flex-end;
+        justify-content: flex-start;
+        margin-top: 0.58rem;
     }
 
     .status-pill {
@@ -132,38 +165,9 @@ CUSTOM_CSS = """
         color: var(--lime);
         background: rgba(184, 255, 77, 0.08);
         border-radius: 999px;
-        padding: 0.35rem 0.65rem;
-        font-size: 0.8rem;
+        padding: 0.22rem 0.5rem;
+        font-size: 0.7rem;
         white-space: nowrap;
-    }
-
-    .metric-grid {
-        display: grid;
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-        gap: 0.6rem;
-        margin: 0.9rem 0 1rem;
-    }
-
-    .metric-row {
-        border: 1px solid rgba(255, 204, 51, 0.28);
-        border-radius: 8px;
-        padding: 0.72rem 0.8rem;
-        background: rgba(17, 20, 33, 0.92);
-        min-height: 72px;
-    }
-
-    .metric-label {
-        color: var(--muted);
-        font-size: 0.72rem;
-        text-transform: uppercase;
-        letter-spacing: 0.08em;
-    }
-
-    .metric-value {
-        color: var(--amber);
-        font-size: 1.35rem;
-        font-weight: 760;
-        margin-top: 0.18rem;
     }
 
     .section-label {
@@ -171,7 +175,7 @@ CUSTOM_CSS = """
         font-size: 0.76rem;
         text-transform: uppercase;
         letter-spacing: 0.1em;
-        margin: 0.9rem 0 0.45rem;
+        margin: 0.75rem 0 0.4rem;
     }
 
     .dock-panel {
@@ -182,6 +186,59 @@ CUSTOM_CSS = """
         margin-top: 0;
         min-height: 210px;
         box-shadow: 0 0 24px rgba(255, 47, 146, 0.08);
+    }
+
+    .command-panel {
+        border-color: rgba(0, 245, 255, 0.25);
+        box-shadow: 0 0 22px rgba(0, 245, 255, 0.07);
+        margin-bottom: 0.75rem;
+    }
+
+    .retrieval-panel {
+        border-color: rgba(0, 245, 255, 0.28);
+        box-shadow: 0 0 22px rgba(0, 245, 255, 0.07);
+        position: sticky;
+        top: 0.75rem;
+        max-height: calc(100vh - 1.5rem);
+        overflow-y: auto;
+    }
+
+    .panel-subcopy {
+        color: var(--muted);
+        font-size: 0.82rem;
+        line-height: 1.45;
+        margin-bottom: 0.8rem;
+    }
+
+    .prompt-card {
+        border: 1px solid rgba(0, 245, 255, 0.18);
+        border-radius: 8px;
+        background: rgba(0, 245, 255, 0.05);
+        padding: 0.58rem 0.65rem;
+        margin-bottom: 0.7rem;
+    }
+
+    .prompt-label {
+        color: var(--cyan);
+        font-size: 0.64rem;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        margin-bottom: 0.28rem;
+    }
+
+    .prompt-text {
+        color: var(--text);
+        font-size: 0.82rem;
+        line-height: 1.38;
+        overflow-wrap: anywhere;
+    }
+
+    .query-text {
+        color: var(--muted);
+        font-size: 0.72rem;
+        line-height: 1.35;
+        margin-top: 0.45rem;
+        overflow-wrap: anywhere;
     }
 
     .dock-title {
@@ -212,6 +269,7 @@ CUSTOM_CSS = """
         color: var(--muted);
         font-size: 0.88rem;
         margin-bottom: 1.2rem;
+        line-height: 1.45;
     }
 
     .chat-frame {
@@ -219,24 +277,124 @@ CUSTOM_CSS = """
         padding-top: 0.75rem;
     }
 
-    [data-testid="stChatMessage"] {
-        background: rgba(17, 20, 33, 0.9);
+    .custom-chat {
+        display: flex;
+        width: 100%;
+        margin: 0 0 0.7rem;
+    }
+
+    .custom-chat.assistant {
+        justify-content: flex-start;
+    }
+
+    .custom-chat.user {
+        justify-content: flex-end;
+    }
+
+    .custom-chat-bubble {
+        max-width: 88%;
+        border-radius: 10px;
+        padding: 0.82rem 0.95rem;
+        background: linear-gradient(135deg, rgba(17, 20, 33, 0.96), rgba(9, 12, 21, 0.94));
         border: 1px solid rgba(0, 245, 255, 0.18);
-        border-radius: 8px;
         box-shadow: 0 0 18px rgba(0, 245, 255, 0.06);
+    }
+
+    .custom-chat.assistant .custom-chat-bubble {
+        border-left: 3px solid var(--cyan);
+        margin-right: 7%;
+    }
+
+    .custom-chat.user .custom-chat-bubble {
+        border-right: 3px solid var(--magenta);
+        background: linear-gradient(135deg, rgba(255, 47, 146, 0.13), rgba(17, 20, 33, 0.92));
+        margin-left: 14%;
+    }
+
+    .chat-label {
+        color: var(--cyan);
+        font-size: 0.68rem;
+        text-transform: uppercase;
+        letter-spacing: 0.09em;
+        margin-bottom: 0.38rem;
+    }
+
+    .custom-chat.user .chat-label {
+        color: #ff9ac9;
+        text-align: right;
+    }
+
+    .chat-body {
+        color: var(--text);
+        font-size: 0.95rem;
+        line-height: 1.55;
+    }
+
+    .chat-body p {
+        margin: 0 0 0.45rem;
+    }
+
+    .chat-body p:last-child {
+        margin-bottom: 0;
+    }
+
+    .chat-body ul {
+        margin: 0.3rem 0 0;
+        padding-left: 1.1rem;
+    }
+
+    .chat-body li {
+        margin-bottom: 0.4rem;
+    }
+
+    [data-testid="stChatMessage"] {
+        background: linear-gradient(135deg, rgba(17, 20, 33, 0.95), rgba(11, 14, 24, 0.92));
+        border: 1px solid rgba(0, 245, 255, 0.18);
+        border-radius: 10px;
+        box-shadow: 0 0 18px rgba(0, 245, 255, 0.06);
+        padding: 0.85rem 0.95rem;
+        margin-bottom: 0.65rem;
     }
 
     [data-testid="stChatMessage"]:has([data-testid="chatAvatarIcon-assistant"]) {
         border-color: rgba(0, 245, 255, 0.28);
+        border-left: 3px solid var(--cyan);
+        margin-right: 7%;
     }
 
     [data-testid="stChatMessage"]:has([data-testid="chatAvatarIcon-user"]) {
         border-color: rgba(255, 47, 146, 0.3);
+        border-right: 3px solid var(--magenta);
+        background: linear-gradient(135deg, rgba(255, 47, 146, 0.12), rgba(17, 20, 33, 0.92));
+        margin-left: 14%;
+    }
+
+    [data-testid="stChatMessage"] [data-testid="stMarkdownContainer"] {
+        line-height: 1.55;
+        font-size: 0.95rem;
+    }
+
+    [data-testid="stChatMessage"] [data-testid="stMarkdownContainer"] p {
+        margin-bottom: 0.45rem;
     }
 
     [data-testid="stChatInput"] {
-        background: rgba(9, 10, 18, 0.94);
-        border-top: 1px solid rgba(0, 245, 255, 0.2);
+        background: rgba(9, 10, 18, 0.86);
+        border-top: 1px solid rgba(0, 245, 255, 0.14);
+        padding: 0.38rem 0.75rem 0.45rem !important;
+    }
+
+    [data-testid="stChatInput"] > div {
+        max-width: 720px;
+        margin: 0 auto;
+    }
+
+    [data-testid="stChatInput"] textarea,
+    [data-testid="stChatInput"] input {
+        min-height: 2.25rem !important;
+        padding: 0.42rem 0.72rem !important;
+        font-size: 0.9rem !important;
+        line-height: 1.25 !important;
     }
 
     textarea,
@@ -249,8 +407,25 @@ CUSTOM_CSS = """
         color: var(--text);
         border: 1px solid rgba(0, 245, 255, 0.42);
         border-radius: 8px;
-        min-height: 2.35rem;
+        min-height: 2.25rem;
+        width: 100%;
+        padding: 0.35rem 0.52rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.35rem;
         box-shadow: inset 0 0 0 1px rgba(255, 47, 146, 0.08);
+    }
+
+    .stButton > button * {
+        white-space: nowrap !important;
+        overflow-wrap: normal !important;
+        word-break: keep-all !important;
+    }
+
+    .stButton > button p {
+        font-size: 0.88rem;
+        line-height: 1;
     }
 
     .stButton > button:hover {
@@ -262,6 +437,27 @@ CUSTOM_CSS = """
     .stButton > button:focus:not(:active) {
         border-color: var(--lime);
         box-shadow: 0 0 0 0.12rem rgba(184, 255, 77, 0.22);
+    }
+
+    div[data-testid="stRadio"] label,
+    div[data-testid="stSelectbox"] label,
+    div[data-testid="stCheckbox"] label {
+        color: var(--muted) !important;
+        font-size: 0.78rem !important;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+    }
+
+    div[role="radiogroup"] {
+        gap: 0.15rem;
+    }
+
+    div[role="radiogroup"] label {
+        background: rgba(0, 245, 255, 0.05);
+        border: 1px solid rgba(0, 245, 255, 0.14);
+        border-radius: 8px;
+        padding: 0.2rem 0.35rem;
+        margin-bottom: 0.22rem;
     }
 
     .source-box {
@@ -284,6 +480,62 @@ CUSTOM_CSS = """
         overflow-wrap: anywhere;
     }
 
+    .source-meta {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.45rem;
+        flex-wrap: wrap;
+        margin: 0.38rem 0 0.28rem;
+    }
+
+    .confidence-pill {
+        border-radius: 999px;
+        padding: 0.12rem 0.45rem;
+        font-size: 0.68rem;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        border: 1px solid rgba(154, 167, 189, 0.32);
+        color: var(--muted);
+        background: rgba(154, 167, 189, 0.08);
+    }
+
+    .confidence-high {
+        border-color: rgba(184, 255, 77, 0.42);
+        color: var(--lime);
+        background: rgba(184, 255, 77, 0.08);
+    }
+
+    .confidence-medium {
+        border-color: rgba(255, 204, 51, 0.42);
+        color: var(--amber);
+        background: rgba(255, 204, 51, 0.08);
+    }
+
+    .confidence-low {
+        border-color: rgba(255, 47, 146, 0.38);
+        color: #ff9ac9;
+        background: rgba(255, 47, 146, 0.08);
+    }
+
+    .source-link {
+        color: var(--lime);
+        text-decoration: none;
+        font-size: 0.78rem;
+        font-weight: 700;
+    }
+
+    .source-link:hover {
+        color: #ffffff;
+        text-decoration: underline;
+    }
+
+    .source-detail {
+        color: var(--muted);
+        font-size: 0.76rem;
+        overflow-wrap: anywhere;
+    }
+
     .stExpander {
         border: 1px solid rgba(0, 245, 255, 0.2) !important;
         border-radius: 8px !important;
@@ -301,8 +553,9 @@ CUSTOM_CSS = """
     }
 
     @media (max-width: 820px) {
-        .metric-grid {
+        .header-stats {
             grid-template-columns: 1fr;
+            max-width: none;
         }
         .main-title {
             font-size: 1.35rem;
@@ -316,6 +569,7 @@ CUSTOM_CSS = """
 
 
 def initialize_state() -> None:
+    st.session_state.pop("answer_style", None)
     if "messages" not in st.session_state:
         st.session_state.messages = [
             {
@@ -327,6 +581,10 @@ def initialize_state() -> None:
         ]
     if "last_sources" not in st.session_state:
         st.session_state.last_sources = []
+    if "last_prompt" not in st.session_state:
+        st.session_state.last_prompt = ""
+    if "last_search_query" not in st.session_state:
+        st.session_state.last_search_query = ""
     if "pending_prompt" not in st.session_state:
         st.session_state.pending_prompt = None
 
@@ -352,24 +610,138 @@ def run_ingestion(refresh_wikipedia: bool) -> tuple[bool, str]:
     return completed.returncode == 0, output
 
 
+def source_confidence(score: float) -> tuple[str, str]:
+    if score >= 0.18:
+        return "High", "confidence-high"
+    if score >= 0.08:
+        return "Medium", "confidence-medium"
+    if score > 0:
+        return "Low", "confidence-low"
+    return "Trace", ""
+
+
+def format_chat_body(content: str) -> str:
+    lines = str(content).splitlines()
+    html_parts = []
+    in_list = False
+
+    for line in lines:
+        stripped = line.strip()
+        if not stripped:
+            continue
+        if stripped.startswith("- "):
+            if not in_list:
+                html_parts.append("<ul>")
+                in_list = True
+            html_parts.append(f"<li>{escape(stripped[2:])}</li>")
+            continue
+        if in_list:
+            html_parts.append("</ul>")
+            in_list = False
+        html_parts.append(f"<p>{escape(stripped)}</p>")
+
+    if in_list:
+        html_parts.append("</ul>")
+    return "\n".join(html_parts)
+
+
+def render_chat_message(role: str, content: str) -> None:
+    safe_role = "user" if role == "user" else "assistant"
+    label = "Player" if safe_role == "user" else "Arcade RAG"
+    st.markdown(
+        f"""
+        <div class="custom-chat {safe_role}">
+            <div class="custom-chat-bubble">
+                <div class="chat-label">{label}</div>
+                <div class="chat-body">{format_chat_body(content)}</div>
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
 def build_sources_html(sources: list[dict]) -> str:
     if not sources:
-        return '<div class="empty-source">No sources retrieved yet.</div>'
+        return (
+            '<div class="empty-source">'
+            "Ask a question to see ranked Wikipedia sources, confidence, and links."
+            "</div>"
+        )
 
     items = []
     for source in sources:
-        page = f", page {escape(str(source['page']))}" if source.get("page") else ""
+        page = f"Page {escape(str(source['page']))}" if source.get("page") else ""
+        chunk = f"Chunk {escape(str(source['chunk']))}" if source.get("chunk") is not None else ""
+        location = " | ".join(item for item in (page, chunk) if item)
         title = escape(str(source.get("title", "Unknown")))
-        score = escape(str(source.get("score", "")))
-        source_file = escape(Path(source.get("source", "")).name)
+        raw_score = source.get("score", 0)
+        try:
+            score_value = float(raw_score)
+        except (TypeError, ValueError):
+            score_value = 0.0
+        confidence, confidence_class = source_confidence(score_value)
+        score = escape(f"{score_value:.4f}")
+        source_path = source.get("source", "")
+        source_file = escape(Path(source_path).name if source_path else "Indexed corpus")
+        url = escape(str(source.get("source_url", "")), quote=True)
+        link = (
+            f'<a class="source-link" href="{url}" target="_blank" '
+            f'rel="noopener noreferrer">Open Wikipedia</a>'
+            if url
+            else '<span class="source-detail">No URL</span>'
+        )
+        location_html = f'<div class="source-detail">{location}</div>' if location else ""
         items.append(
             f'<div class="source-box">'
-            f"<strong>{title}</strong>{page}<br>"
-            f"Score: {score}<br>"
-            f"<span>{source_file}</span>"
+            f"<strong>{title}</strong>"
+            f"{location_html}"
+            f'<div class="source-meta">'
+            f'<span class="confidence-pill {confidence_class}">{confidence}</span>'
+            f"<span>Score {score}</span>"
+            f"{link}"
+            f"</div>"
+            f'<div class="source-detail">{source_file}</div>'
             f"</div>"
         )
     return "\n".join(items)
+
+
+def build_retrieval_panel_html(
+    sources: list[dict],
+    prompt: str = "",
+    search_query: str = "",
+) -> str:
+    prompt_html = ""
+    if prompt:
+        prompt_html = (
+            '<div class="prompt-card">'
+            '<div class="prompt-label">Current Prompt</div>'
+            f'<div class="prompt-text">{escape(prompt)}</div>'
+        )
+        if search_query:
+            prompt_html += (
+                '<div class="query-text">'
+                f"Query: {escape(search_query)}"
+                "</div>"
+            )
+        prompt_html += "</div>"
+    else:
+        prompt_html = (
+            '<div class="prompt-card">'
+            '<div class="prompt-label">Current Prompt</div>'
+            '<div class="prompt-text">Ask a question to populate this retrieval rail.</div>'
+            "</div>"
+        )
+
+    return (
+        '<div class="dock-panel retrieval-panel">'
+        '<div class="dock-title">Retrieval Feed</div>'
+        '<div class="panel-subcopy">Conversation-aware query and ranked sources for the latest prompt.</div>'
+        f"{prompt_html}"
+        f"{build_sources_html(sources)}"
+        "</div>"
+    )
 
 
 def render_sources(sources: list[dict]) -> None:
@@ -380,45 +752,120 @@ initialize_state()
 st.markdown(CUSTOM_CSS, unsafe_allow_html=True)
 metadata = load_index_metadata()
 
-with st.sidebar:
-    st.markdown('<div class="section-label">Knowledge Core</div>', unsafe_allow_html=True)
-    if metadata:
-        st.success("Vector index ready")
-        st.write(f"Sources: {metadata.get('source_count', 0)}")
-        st.write(f"Chunks: {metadata.get('chunk_count', 0)}")
-        st.caption(f"Built: {metadata.get('built_at_utc', 'Unknown')}")
-    else:
-        st.warning("Index not built yet")
+gemini_ready = has_gemini_key()
+gemini_warning = get_gemini_warning() if gemini_ready else ""
+answer_engine = st.session_state.get("answer_engine", "Extractive")
 
-    st.divider()
-    st.markdown('<div class="section-label">Answer Engine</div>', unsafe_allow_html=True)
-    gemini_ready = has_gemini_key()
-    gemini_warning = get_gemini_warning() if gemini_ready else ""
-    default_engine = 1 if gemini_ready and not gemini_warning else 0
-    answer_engine = st.radio(
-        "Mode",
-        ["Extractive", "Gemini API"],
-        index=default_engine,
+llm_provider = "Extractive"
+if answer_engine == "Gemini API" and gemini_ready and not gemini_warning:
+    llm_provider = "Gemini"
+
+source_count = metadata.get("source_count", 0) if metadata else 0
+chunk_count = metadata.get("chunk_count", 0) if metadata else 0
+mode_label = llm_provider if llm_provider != "Extractive" else "RAG"
+
+st.markdown(
+    f"""
+    <div class="arcade-topbar">
+        <div class="title-row">
+            <div class="title-copy">
+                <div class="main-title">Arcade RAG Console</div>
+                <div class="subtitle">Gaming knowledge retrieval from the local Wikipedia corpus.</div>
+                <div class="status-strip">
+                    <span class="status-pill">LOCAL INDEX</span>
+                    <span class="status-pill">MEMORY ON</span>
+                    <span class="status-pill">WIKI CORPUS</span>
+                    <span class="status-pill">SOURCE LINKS</span>
+                </div>
+            </div>
+            <div class="header-stats">
+                <div class="header-stat">
+                    <div class="header-stat-label">Sources</div>
+                    <div class="header-stat-value">{source_count}</div>
+                </div>
+                <div class="header-stat">
+                    <div class="header-stat-label">Chunks</div>
+                    <div class="header-stat-value">{chunk_count}</div>
+                </div>
+                <div class="header-stat">
+                    <div class="header-stat-label">Mode</div>
+                    <div class="header-stat-value">{mode_label}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    """,
+    unsafe_allow_html=True,
+)
+
+feed_col, main_col, command_col = st.columns([1.12, 2.78, 1.1], gap="large")
+
+with feed_col:
+    st.markdown(
+        build_retrieval_panel_html(
+            sources=st.session_state.last_sources,
+            prompt=st.session_state.last_prompt,
+            search_query=st.session_state.last_search_query,
+        ),
+        unsafe_allow_html=True,
+    )
+
+with main_col:
+
+    st.markdown('<div class="section-label">Quick Launch</div>', unsafe_allow_html=True)
+    for row_start in range(0, len(TOPIC_BUTTONS), QUICK_LAUNCH_COLUMNS):
+        quick_cols = st.columns(QUICK_LAUNCH_COLUMNS, gap="small")
+        row_buttons = TOPIC_BUTTONS[row_start : row_start + QUICK_LAUNCH_COLUMNS]
+        for column, (label, question, icon) in zip(quick_cols, row_buttons):
+            with column:
+                if st.button(label, icon=icon, use_container_width=True):
+                    st.session_state.pending_prompt = question
+                    st.rerun()
+
+    if not INDEX_METADATA_PATH.exists():
+        st.info("Build the index from the command deck before asking questions.")
+
+    st.markdown('<div class="chat-frame">', unsafe_allow_html=True)
+    for message in st.session_state.messages:
+        render_chat_message(message["role"], message["content"])
+    st.markdown("</div>", unsafe_allow_html=True)
+
+with command_col:
+    st.markdown(
+        f"""
+        <div class="dock-panel command-panel">
+            <div class="dock-title">Command Deck</div>
+            <div class="panel-subcopy">Choose the answer engine and rebuild the local corpus index from here.</div>
+            <div class="topic-list">
+                <span class="topic-chip">Sources {source_count}</span>
+                <span class="topic-chip">Chunks {chunk_count}</span>
+                <span class="topic-chip">{mode_label}</span>
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    mode_options = ["Extractive", "Gemini API"]
+    selected_mode_index = mode_options.index(answer_engine) if answer_engine in mode_options else 0
+    st.radio(
+        "Answer Engine",
+        mode_options,
+        index=selected_mode_index,
+        key="answer_engine",
         help="Extractive is local. Gemini API uses retrieved context plus your Gemini key.",
     )
-    answer_style = st.selectbox("Answer Style", ["Concise", "Detailed"], index=0)
-    if answer_engine == "Gemini API" and gemini_ready:
+    if st.session_state.get("answer_engine") == "Gemini API" and gemini_ready:
         st.caption(f"Gemini model: {get_gemini_model_name()}")
         if gemini_warning:
             st.warning(gemini_warning)
-    elif answer_engine == "Gemini API":
+    elif st.session_state.get("answer_engine") == "Gemini API":
         st.warning("GEMINI_API_KEY was not found in .env or .env.txt.")
-
-    llm_provider = "Extractive"
-    if answer_engine == "Gemini API" and gemini_ready and not gemini_warning:
-        llm_provider = "Gemini"
-
-    if answer_engine == "Gemini API" and gemini_warning:
+    if st.session_state.get("answer_engine") == "Gemini API" and gemini_warning:
         st.warning("Gemini API mode is disabled until the model configuration is compatible.")
 
-    st.divider()
-    refresh = st.checkbox("Refresh Wikipedia text before indexing", value=False)
-    if st.button("Build / Rebuild Index", use_container_width=True):
+    refresh = st.checkbox("Refresh Wikipedia text", value=False, key="refresh_wikipedia")
+    if st.button("Build / Rebuild Index", icon=":material/sync:", use_container_width=True):
         with st.status("Building local vector index...", expanded=True) as status:
             ok, output = run_ingestion(refresh)
             if ok:
@@ -429,138 +876,55 @@ with st.sidebar:
                 status.update(label="Index build failed", state="error")
                 st.code(output)
 
-    if st.button("Reset Run", use_container_width=True):
+    if st.button("Reset Run", icon=":material/restart_alt:", use_container_width=True):
         st.session_state.messages = []
         st.session_state.last_sources = []
+        st.session_state.last_prompt = ""
+        st.session_state.last_search_query = ""
         st.session_state.pending_prompt = None
         st.rerun()
 
-    st.divider()
-    st.markdown('<div class="section-label">Source Feed</div>', unsafe_allow_html=True)
-    render_sources(st.session_state.last_sources)
-
-main_col, source_col = st.columns([3.25, 1], gap="large")
-
-with main_col:
-    st.markdown(
-        f"""
-        <div class="arcade-topbar">
-            <div class="title-row">
-                <div>
-                    <div class="main-title">Arcade RAG Console</div>
-                    <div class="subtitle">Gaming knowledge retrieval from the local Wikipedia corpus.</div>
-                </div>
-                <div class="status-strip">
-                    <span class="status-pill">LOCAL INDEX</span>
-                    <span class="status-pill">MEMORY ON</span>
-                    <span class="status-pill">WIKI CORPUS</span>
-                </div>
-            </div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-
-    if metadata:
-        st.markdown(
-            f"""
-            <div class="metric-grid">
-                <div class="metric-row">
-                    <div class="metric-label">Sources</div>
-                    <div class="metric-value">{metadata.get("source_count", 0)}</div>
-                </div>
-                <div class="metric-row">
-                    <div class="metric-label">Chunks</div>
-                    <div class="metric-value">{metadata.get("chunk_count", 0)}</div>
-                </div>
-                <div class="metric-row">
-                    <div class="metric-label">Mode</div>
-                    <div class="metric-value">{llm_provider if llm_provider != "Extractive" else "RAG"}</div>
-                </div>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
-
-    st.markdown('<div class="section-label">Quick Launch</div>', unsafe_allow_html=True)
-    quick_cols = st.columns(len(TOPIC_BUTTONS))
-    for column, (label, question, icon) in zip(quick_cols, TOPIC_BUTTONS):
-        with column:
-            if st.button(label, icon=icon, use_container_width=True):
-                st.session_state.pending_prompt = question
-                st.rerun()
-
-    if not INDEX_METADATA_PATH.exists():
-        st.info("Build the index from the sidebar before asking questions.")
-
-    st.markdown('<div class="chat-frame">', unsafe_allow_html=True)
-    for message in st.session_state.messages:
-        avatar = ASSISTANT_AVATAR if message["role"] == "assistant" else USER_AVATAR
-        with st.chat_message(message["role"], avatar=avatar):
-            st.markdown(message["content"])
-    st.markdown("</div>", unsafe_allow_html=True)
-
-with source_col:
-    source_panel_html = (
-        '<div class="dock-panel">'
-        '<div class="dock-title">Retrieval Feed</div>'
-        f"{build_sources_html(st.session_state.last_sources)}"
-        '<div class="dock-title">Corpus Channels</div>'
-        '<div class="topic-list">'
-        '<span class="topic-chip">AAA</span>'
-        '<span class="topic-chip">Open World</span>'
-        '<span class="topic-chip">Mobile</span>'
-        '<span class="topic-chip">RPG</span>'
-        '<span class="topic-chip">Action</span>'
-        '<span class="topic-chip">Market</span>'
-        "</div>"
-        "</div>"
-    )
-    st.markdown(
-        source_panel_html,
-        unsafe_allow_html=True,
-    )
-
-prompt = st.session_state.pending_prompt or st.chat_input(
-    "Enter command: ask about gaming history, genres, market, or design."
-)
+prompt = st.session_state.pending_prompt or st.chat_input("Ask about gaming...")
 if prompt:
     st.session_state.pending_prompt = None
     st.session_state.messages.append({"role": "user", "content": prompt})
     with main_col:
-        with st.chat_message("user", avatar=USER_AVATAR):
-            st.markdown(prompt)
+        render_chat_message("user", prompt)
 
     try:
         chatbot = load_chatbot()
         with main_col:
-            with st.chat_message("assistant", avatar=ASSISTANT_AVATAR):
-                with st.spinner("Retrieving relevant Wikipedia context..."):
-                    result = chatbot.answer(
-                        prompt,
-                        history=st.session_state.messages[:-1],
-                        llm_provider=llm_provider,
-                        answer_style=answer_style,
+            with st.spinner("Retrieving relevant Wikipedia context..."):
+                result = chatbot.answer(
+                    prompt,
+                    history=st.session_state.messages[:-1],
+                    llm_provider=llm_provider,
+                )
+            render_chat_message("assistant", result["answer"])
+            with st.expander("Retrieved context"):
+                st.caption(f"Search query: {result['search_query']}")
+                for chunk in result["retrieved_chunks"]:
+                    title = chunk["metadata"].get("source_title", "Unknown")
+                    source_url = chunk["metadata"].get("source_url")
+                    source_line = f"**{title}** | score `{chunk['score']:.4f}`"
+                    if source_url:
+                        source_line += f" | [Wikipedia source]({source_url})"
+                    st.markdown(source_line)
+                    st.write(
+                        chunk["text"][:900]
+                        + ("..." if len(chunk["text"]) > 900 else "")
                     )
-                st.markdown(result["answer"])
-                with st.expander("Retrieved context"):
-                    st.caption(f"Search query: {result['search_query']}")
-                    for chunk in result["retrieved_chunks"]:
-                        title = chunk["metadata"].get("source_title", "Unknown")
-                        st.markdown(f"**{title}** | score `{chunk['score']:.4f}`")
-                        st.write(
-                            chunk["text"][:900]
-                            + ("..." if len(chunk["text"]) > 900 else "")
-                        )
 
         st.session_state.messages.append(
             {"role": "assistant", "content": result["answer"]}
         )
         st.session_state.last_sources = result["sources"]
+        st.session_state.last_prompt = prompt
+        st.session_state.last_search_query = result["search_query"]
         st.rerun()
     except FileNotFoundError:
         with main_col:
-            st.error("Vector index not found. Build the index from the sidebar first.")
+            st.error("Vector index not found. Build the index from the command deck first.")
     except Exception as exc:
         with main_col:
             st.error(f"API answer mode failed: {exc}")

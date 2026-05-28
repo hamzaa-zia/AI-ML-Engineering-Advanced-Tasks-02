@@ -47,6 +47,30 @@ WIKIPEDIA_PAGES = [
         "url": "https://en.wikipedia.org/wiki/Open_world",
     },
     {
+        "title": "Video game genre",
+        "url": "https://en.wikipedia.org/wiki/Video_game_genre",
+    },
+    {
+        "title": "Action-adventure game",
+        "url": "https://en.wikipedia.org/wiki/Action-adventure_game",
+    },
+    {
+        "title": "Cloud gaming",
+        "url": "https://en.wikipedia.org/wiki/Cloud_gaming",
+    },
+    {
+        "title": "Horror game",
+        "url": "https://en.wikipedia.org/wiki/Horror_game",
+    },
+    {
+        "title": "Racing video game",
+        "url": "https://en.wikipedia.org/wiki/Racing_video_game",
+    },
+    {
+        "title": "Sports video game",
+        "url": "https://en.wikipedia.org/wiki/Sports_video_game",
+    },
+    {
         "title": "Video game industry",
         "url": "https://en.wikipedia.org/wiki/Video_game_industry",
     },

@@ -3,10 +3,50 @@ import re
 from src.config import DEFAULT_CHUNK_OVERLAP, DEFAULT_CHUNK_SIZE
 
 
+REFERENCE_SECTION_PATTERN = re.compile(
+    r"(?im)(?:^|\n)\s*(?:=+\s*)?"
+    r"(references|external links|further reading|bibliography|notes|citations|sources)"
+    r"(?:\s*=+)?\s*(?:\n|$)"
+)
+
+CITATION_PATTERN = re.compile(
+    r"\[(?:\d+[a-z]?|[a-z]|citation needed|clarification needed|"
+    r"failed verification|better source needed|who\?|note \d+)\]",
+    flags=re.IGNORECASE,
+)
+
+
+def strip_reference_sections(text: str) -> str:
+    match = REFERENCE_SECTION_PATTERN.search(text)
+    if not match:
+        return text
+
+    # Keep article body sections named "References" only when they are clearly not
+    # terminal citation sections. Wikipedia reference sections usually start a page
+    # or appear after the main body.
+    if match.start() == 0 or match.start() > 200:
+        return text[: match.start()]
+    return text
+
+
 def clean_text(text: str) -> str:
     text = text.replace("\x00", " ")
-    text = re.sub(r"\s+", " ", text)
     text = re.sub(r"\[\s*edit\s*\]", " ", text, flags=re.IGNORECASE)
+    text = re.sub(r"(\w)-\s*\n\s*(\w)", r"\1\2", text)
+    text = strip_reference_sections(text)
+    text = re.sub(
+        r"(?im)^\s*\d+\.\s+.*(?:retrieved|archived|https?://|www\.|doi:).*$",
+        " ",
+        text,
+    )
+    text = re.sub(r"(?m)^\s*=+\s*([^=\n]{2,90})\s*=+\s*$", r". \1. ", text)
+    text = CITATION_PATTERN.sub(" ", text)
+    text = re.sub(r"https?://\S+|www\.\S+", " ", text)
+    text = re.sub(r"\bdoi:\s*\S+", " ", text, flags=re.IGNORECASE)
+    text = re.sub(r"\bISBN\s+[0-9Xx -]{10,24}", " ", text, flags=re.IGNORECASE)
+    text = re.sub(r"(?im)^\s*(category|categories):\s+.*$", " ", text)
+    text = re.sub(r"\s+", " ", text)
+    text = re.sub(r"\s+([,.;:!?])", r"\1", text)
     return text.strip()
 
 
